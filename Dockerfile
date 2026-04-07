@@ -1,25 +1,38 @@
 FROM node:23.3.0-slim AS builder
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    python3 make g++ pkg-config libcairo2-dev libpango1.0-dev git \
+    python3 \
+    make \
+    g++ \
+    pkg-config \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libgif-dev \
+    librsvg2-dev \
+    git \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g pnpm@9.15.1
 
 WORKDIR /app
 
+# Copy config and source
 COPY package.json pnpm-lock.yaml* .npmrc* tsconfig.json ./
 COPY src ./src
 COPY scripts ./scripts
 COPY characters ./characters
 
-# Install dependencies but specifically rebuild better-sqlite3
+# --- THE FIX ---
+# 1. Install without scripts (skips broken stuff)
 RUN pnpm install --ignore-scripts
+# 2. Rebuild ONLY the database (makes it work on Railway)
 RUN pnpm rebuild better-sqlite3
-
+# 3. Build the agent
 RUN pnpm build
 
-# --- Runtime ---
+# --- Runtime Stage ---
 FROM node:23.3.0-slim
 RUN npm install -g pnpm@9.15.1
 RUN apt-get update && apt-get install -y git python3 && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -36,5 +49,5 @@ COPY --from=builder /app/tsconfig.json ./
 
 EXPOSE 3000
 
-# Start command
+# Final start command
 CMD ["pnpm", "start", "--character=characters/cto_agent.json"]
