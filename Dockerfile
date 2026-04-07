@@ -1,7 +1,7 @@
 # Use Node 23 slim as the base
 FROM node:23.3.0-slim AS builder
 
-# Install system dependencies required for native modules (Canvas, SQLite, etc.)
+# Install system dependencies required for native modules
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
@@ -20,8 +20,8 @@ RUN npm install -g pnpm@9.15.1
 
 WORKDIR /app
 
-# Copy dependency files first for better caching
-COPY package.json pnpm-lock.yaml* .npmrc ./
+# Copy dependency files (Note the * after .npmrc to make it optional)
+COPY package.json pnpm-lock.yaml* .npmrc* ./
 
 # Copy the actual code folders present in your repo
 COPY src ./src
@@ -55,7 +55,5 @@ COPY --from=builder /app/dist ./dist
 # Expose the API/Dashboard port
 EXPOSE 3000
 
-# Start the agent using your character file
-# Railway's CHARACTER_PATH variable will override this if set, 
-# but this is the safe default.
+# Start the agent
 CMD ["pnpm", "start", "--character=characters/cto_agent.json"]
