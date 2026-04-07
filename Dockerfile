@@ -1,7 +1,7 @@
 # Use Node 23 slim as the base
 FROM node:23.3.0-slim AS builder
 
-# Install system dependencies required for native modules
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     python3 \
     make \
@@ -29,8 +29,8 @@ COPY scripts ./scripts
 COPY characters ./characters
 COPY tsconfig.json ./
 
-# Install all dependencies
-RUN pnpm install
+# --- THE FIX: Skip the broken Discord audio scripts ---
+RUN pnpm install --ignore-scripts
 
 # Build the project
 RUN pnpm build
