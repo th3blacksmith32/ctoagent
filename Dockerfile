@@ -13,10 +13,10 @@ COPY src ./src
 COPY scripts ./scripts
 COPY characters ./characters
 
-# Install without scripts to bypass the broken audio libraries
+# Install dependencies but specifically rebuild better-sqlite3
 RUN pnpm install --ignore-scripts
+RUN pnpm rebuild better-sqlite3
 
-# Build the project to generate the /dist folder
 RUN pnpm build
 
 # --- Runtime ---
@@ -36,5 +36,5 @@ COPY --from=builder /app/tsconfig.json ./
 
 EXPOSE 3000
 
-# We use 'pnpm start' but ensure the environment is ready
+# Start command
 CMD ["pnpm", "start", "--character=characters/cto_agent.json"]
