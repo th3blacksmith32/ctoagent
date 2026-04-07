@@ -1,53 +1,27 @@
-FROM node:23.3.0-slim AS builder
+FROM node:23.3.0-slim
 
-# Install system dependencies
+# Install system essentials for compiling the database
 RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    pkg-config \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
-    libgif-dev \
-    librsvg2-dev \
-    git \
+    python3 make g++ pkg-config git \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g pnpm@9.15.1
 
 WORKDIR /app
 
-# Copy config and source
-COPY package.json pnpm-lock.yaml* .npmrc* tsconfig.json ./
-COPY src ./src
-COPY scripts ./scripts
-COPY characters ./characters
+# Copy everything
+COPY . .
 
-# --- THE FIX ---
-# 1. Install without scripts (skips broken stuff)
+# 1. Install dependencies (ignoring scripts to bypass audio errors)
 RUN pnpm install --ignore-scripts
-# 2. Rebuild ONLY the database (makes it work on Railway)
+
+# 2. FORCE REBUILD only the database in place
 RUN pnpm rebuild better-sqlite3
-# 3. Build the agent
+
+# 3. Compile the TypeScript
 RUN pnpm build
-
-# --- Runtime Stage ---
-FROM node:23.3.0-slim
-RUN npm install -g pnpm@9.15.1
-RUN apt-get update && apt-get install -y git python3 && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/characters ./characters
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/tsconfig.json ./
 
 EXPOSE 3000
 
-# Final start command
-CMD ["pnpm", "start", "--character=characters/cto_agent.json"]
+# Start directly
+CMD ["node", "--loader", "ts-node/esm", "src/index.ts", "--character=characters/cto_agent.json"]
