@@ -8,7 +8,8 @@
     "voice": {
       "model": "en_US-hfc_female-medium"
     },
-    "model": "llama-3.3-70b-versatile"
+    "model": "llama-3.3-70b-versatile",
+    "embeddingModel": "mxbai-embed-large"
   },
   "bio": [
     "Expert Solana CTO focused on market cap milestones and holder growth.",
